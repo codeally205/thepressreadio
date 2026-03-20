@@ -6,6 +6,7 @@ import { eq, desc } from 'drizzle-orm'
 import SignOutForm from '@/components/auth/SignOutForm'
 import SubscriptionManagement from '@/components/subscription/SubscriptionManagement'
 import PaystackVerification from '@/components/subscription/PaystackVerification'
+import StripeVerification from '@/components/subscription/StripeVerification'
 import TrialHandler from '@/components/subscription/TrialHandler'
 
 interface AccountPageProps {
@@ -13,6 +14,7 @@ interface AccountPageProps {
     success?: string
     canceled?: string
     reference?: string
+    session_id?: string
   }
 }
 
@@ -58,6 +60,9 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
 
       {/* Paystack Verification - Show when reference is present */}
       {(searchParams.reference || searchParams.success) && <PaystackVerification />}
+
+      {/* Stripe Verification - Show when session_id is present */}
+      {searchParams.session_id && <StripeVerification />}
 
       {/* Success/Error Messages */}
       {searchParams.success && (

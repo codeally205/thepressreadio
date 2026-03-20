@@ -45,15 +45,30 @@ export async function POST(req: NextRequest) {
         case 'customer.subscription.created':
         case 'customer.subscription.updated': {
           const subscription = event.data.object as Stripe.Subscription
+          
+          // ✅ Get email from subscription metadata (set during checkout)
           const customerEmail = subscription.metadata.email
 
-          if (!customerEmail) break
+          if (!customerEmail) {
+            console.warn('⚠️ No email in subscription metadata')
+            break
+          }
 
+          // ✅ Look up user by email (same as Paystack)
           const user = await tx.query.users.findFirst({
             where: eq(users.email, customerEmail),
           })
 
-          if (!user) break
+          if (!user) {
+            console.warn('⚠️ User not found for email:', customerEmail)
+            break
+          }
+
+          console.log('✅ User found by email:', {
+            id: user.id,
+            email: user.email,
+            name: user.name
+          })
 
           const isNewSubscription = event.type === 'customer.subscription.created'
           const trialEndsAt = subscription.trial_end
@@ -137,6 +152,8 @@ export async function POST(req: NextRequest) {
 
         case 'customer.subscription.deleted': {
           const subscription = event.data.object as Stripe.Subscription
+          
+          // ✅ Get email from subscription metadata
           const customerEmail = subscription.metadata.email
 
           await tx
@@ -148,13 +165,18 @@ export async function POST(req: NextRequest) {
             })
             .where(eq(subscriptions.stripeSubscriptionId, subscription.id))
 
+          console.log('✅ Subscription cancelled:', subscription.id)
+
           // Send cancellation email
           if (customerEmail) {
+            // ✅ Look up user by email
             const user = await tx.query.users.findFirst({
               where: eq(users.email, customerEmail),
             })
 
             if (user) {
+              console.log('✅ Sending cancellation email to:', customerEmail)
+              
               await sendSubscriptionCancelledEmail({
                 email: customerEmail,
                 name: user.name || undefined,
@@ -170,18 +192,29 @@ export async function POST(req: NextRequest) {
         case 'invoice.payment_succeeded': {
           const invoice = event.data.object as Stripe.Invoice
           
-          if ((invoice as any).subscription && (invoice as any).customer_email) {
+          // ✅ Get email from invoice
+          const customerEmail = (invoice as any).customer_email
+          
+          if ((invoice as any).subscription && customerEmail) {
+            // ✅ Look up user by email
             const user = await tx.query.users.findFirst({
-              where: eq(users.email, (invoice as any).customer_email),
+              where: eq(users.email, customerEmail),
             })
+
+            if (!user) {
+              console.warn('⚠️ User not found for email:', customerEmail)
+              break
+            }
 
             const subscription = await tx.query.subscriptions.findFirst({
               where: eq(subscriptions.stripeSubscriptionId, (invoice as any).subscription as string),
             })
 
             if (user && subscription && (invoice as any).amount_paid > 0) {
+              console.log('✅ Sending payment receipt to:', customerEmail)
+              
               await sendPaymentReceiptEmail({
-                email: (invoice as any).customer_email,
+                email: customerEmail,
                 name: user.name || undefined,
                 plan: subscription.plan,
                 amount: (invoice as any).amount_paid / 100, // Convert from cents
@@ -198,22 +231,33 @@ export async function POST(req: NextRequest) {
         case 'invoice.payment_failed': {
           const invoice = event.data.object as Stripe.Invoice
           
-          if ((invoice as any).subscription && (invoice as any).customer_email) {
+          // ✅ Get email from invoice
+          const customerEmail = (invoice as any).customer_email
+          
+          if ((invoice as any).subscription && customerEmail) {
+            // ✅ Look up user by email
             const user = await tx.query.users.findFirst({
-              where: eq(users.email, (invoice as any).customer_email),
+              where: eq(users.email, customerEmail),
             })
+
+            if (!user) {
+              console.warn('⚠️ User not found for email:', customerEmail)
+              break
+            }
 
             const subscription = await tx.query.subscriptions.findFirst({
               where: eq(subscriptions.stripeSubscriptionId, (invoice as any).subscription as string),
             })
 
             if (user && subscription) {
+              console.log('✅ Sending payment failed email to:', customerEmail)
+              
               // Calculate next retry date (Stripe typically retries after 3 days)
               const nextAttemptDate = new Date()
               nextAttemptDate.setDate(nextAttemptDate.getDate() + 3)
 
               await sendPaymentFailedEmail({
-                email: (invoice as any).customer_email,
+                email: customerEmail,
                 name: user.name || undefined,
                 plan: subscription.plan,
                 amount: (invoice as any).amount_due / 100, // Convert from cents

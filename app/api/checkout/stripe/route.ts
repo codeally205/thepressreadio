@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
           plan: plan,
         },
       },
-      success_url: `${process.env.NEXTAUTH_URL}/account?success=true`,
+      success_url: `${process.env.NEXTAUTH_URL}/account?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXTAUTH_URL}/subscribe?canceled=true`,
       metadata: {
         userId: userId,
