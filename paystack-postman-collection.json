@@ -1,0 +1,256 @@
+{
+  "info": {
+    "name": "Paystack Integration Tests",
+    "description": "Test collection for Paystack integration in African News CMS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "paystack_secret_key",
+      "value": "sk_test_29ace0bd7e4890aa1a4f69381fe521b8d710fa6c",
+      "type": "string"
+    },
+    {
+      "key": "paystack_public_key",
+      "value": "pk_test_c6d804a01dc3a43be26d57537b8a4af6c6c39920",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login (Get Session)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"callbackUrl\": \"http://localhost:3000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/signin/email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "signin", "email"]
+            },
+            "description": "Send magic link for authentication"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Paystack Checkout",
+      "item": [
+        {
+          "name": "Create Paystack Checkout (Monthly)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Cookie",
+                "value": "next-auth.session-token=YOUR_SESSION_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "plan",
+                  "value": "continent_monthly",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/checkout/paystack",
+              "host": ["{{base_url}}"],
+              "path": ["api", "checkout", "paystack"]
+            },
+            "description": "Create Paystack checkout for monthly plan ($1)"
+          }
+        },
+        {
+          "name": "Create Paystack Checkout (Yearly)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Cookie",
+                "value": "next-auth.session-token=YOUR_SESSION_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "plan",
+                  "value": "continent_yearly",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/checkout/paystack",
+              "host": ["{{base_url}}"],
+              "path": ["api", "checkout", "paystack"]
+            },
+            "description": "Create Paystack checkout for yearly plan ($10)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Direct Paystack API Tests",
+      "item": [
+        {
+          "name": "Initialize Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{paystack_secret_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "json",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"amount\": 100,\n  \"plan\": \"continent_monthly\",\n  \"callback_url\": \"http://localhost:3000/account?success=true\"\n}"
+            },
+            "url": {
+              "raw": "https://api.paystack.co/transaction/initialize",
+              "protocol": "https",
+              "host": ["api", "paystack", "co"],
+              "path": ["transaction", "initialize"]
+            },
+            "description": "Test direct Paystack transaction initialization"
+          }
+        },
+        {
+          "name": "Verify Transaction",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{paystack_secret_key}}"
+              }
+            ],
+            "url": {
+              "raw": "https://api.paystack.co/transaction/verify/TRANSACTION_REFERENCE",
+              "protocol": "https",
+              "host": ["api", "paystack", "co"],
+              "path": ["transaction", "verify", "TRANSACTION_REFERENCE"]
+            },
+            "description": "Verify a transaction using reference (replace TRANSACTION_REFERENCE)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Webhook Testing",
+      "item": [
+        {
+          "name": "Test Subscription Create Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "WEBHOOK_SIGNATURE_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"subscription.create\",\n  \"data\": {\n    \"subscription_code\": \"SUB_test123\",\n    \"customer\": {\n      \"email\": \"test@example.com\",\n      \"customer_code\": \"CUS_test123\"\n    },\n    \"plan\": {\n      \"name\": \"continent_monthly\"\n    },\n    \"next_payment_date\": \"2026-04-17T00:00:00.000Z\",\n    \"reference\": \"test_ref_123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/webhooks/paystack",
+              "host": ["{{base_url}}"],
+              "path": ["api", "webhooks", "paystack"]
+            },
+            "description": "Test subscription creation webhook"
+          }
+        },
+        {
+          "name": "Test Charge Success Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "WEBHOOK_SIGNATURE_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"test_ref_456\",\n    \"amount\": 100,\n    \"currency\": \"USD\",\n    \"plan\": {\n      \"name\": \"continent_monthly\"\n    },\n    \"customer\": {\n      \"email\": \"test@example.com\",\n      \"customer_code\": \"CUS_test123\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/webhooks/paystack",
+              "host": ["{{base_url}}"],
+              "path": ["api", "webhooks", "paystack"]
+            },
+            "description": "Test successful payment webhook"
+          }
+        },
+        {
+          "name": "Test Subscription Disable Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "WEBHOOK_SIGNATURE_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"subscription.disable\",\n  \"data\": {\n    \"subscription_code\": \"SUB_test123\",\n    \"customer\": {\n      \"email\": \"test@example.com\"\n    },\n    \"plan\": {\n      \"name\": \"continent_monthly\"\n    },\n    \"reference\": \"test_ref_789\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/webhooks/paystack",
+              "host": ["{{base_url}}"],
+              "path": ["api", "webhooks", "paystack"]
+            },
+            "description": "Test subscription cancellation webhook"
+          }
+        }
+      ]
+    }
+  ]
+}
