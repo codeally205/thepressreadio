@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { subscriptions, paymentEvents, users } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import Stripe from 'stripe'
 import { sendSubscriptionWelcomeEmail, sendPaymentReceiptEmail, sendSubscriptionCancelledEmail, sendPaymentFailedEmail } from '@/lib/email-sender'
 

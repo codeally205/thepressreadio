@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { subscriptions, paymentEvents, users } from '@/lib/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { sendSubscriptionWelcomeEmail, sendPaymentReceiptEmail, sendSubscriptionCancelledEmail } from '@/lib/email-sender'
 import { 
   createPaymentIdempotencyKey,

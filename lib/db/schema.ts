@@ -51,7 +51,7 @@ export const verificationTokens = pgTable('verificationToken', {
 }))
 
 // SUBSCRIPTIONS
-export const subscriptions = pgTable('subscriptions', {
+export const subscriptions: any = pgTable('subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   plan: text('plan').notNull(),
