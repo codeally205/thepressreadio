@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
     // ALWAYS try IP geolocation for public IPs
     try {
       console.log('📍 Attempting IP geolocation for:', ip)
-      const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`, {
+      
+      // Using ip-api.com (free, no API key required, good for African IPs)
+      const geoResponse = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,city,continent,continentCode,query`, {
         headers: {
           'User-Agent': 'ThePressRadio/1.0'
         },
@@ -56,14 +58,14 @@ export async function GET(request: NextRequest) {
         const geoData = await geoResponse.json()
         
         // Check if we got valid data
-        if (geoData.country_code && geoData.country_code !== 'undefined') {
-          const detectedCountry = geoData.country_code
+        if (geoData.status === 'success' && geoData.countryCode) {
+          const detectedCountry = geoData.countryCode
           const isAfrican = AFRICAN_COUNTRIES.includes(detectedCountry)
           
           console.log('✅ IP geolocation successful:', {
-            ip,
+            ip: geoData.query,
             country: detectedCountry,
-            continent: geoData.continent_code,
+            continent: geoData.continentCode,
             city: geoData.city,
             region: isAfrican ? 'continent' : 'diaspora'
           })
@@ -71,11 +73,13 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({
             country: detectedCountry,
             region: isAfrican ? 'continent' : 'diaspora',
-            source: 'ip-geolocation',
-            ip,
+            source: 'ip-api.com',
+            ip: geoData.query,
             city: geoData.city,
-            continent: geoData.continent_code
+            continent: geoData.continentCode
           })
+        } else {
+          console.warn('⚠️ IP geolocation returned error:', geoData.message || 'Unknown error')
         }
       }
       

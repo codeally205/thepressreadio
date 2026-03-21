@@ -18,6 +18,7 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
     source: string
     loading: boolean
     error?: string
+    city?: string
   }>({ country: detectedCountry || 'US', source: 'server', loading: true })
   const [trialEligibility, setTrialEligibility] = useState<{
     isEligible: boolean
@@ -29,6 +30,21 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
   useEffect(() => {
     const detectLocation = async () => {
       try {
+        // Check for manual region override via URL parameter (for testing)
+        const urlParams = new URLSearchParams(window.location.search)
+        const manualRegion = urlParams.get('region') as 'diaspora' | 'continent' | null
+        
+        if (manualRegion === 'diaspora' || manualRegion === 'continent') {
+          console.log('🔧 Manual region override:', manualRegion)
+          setDetectedRegion(manualRegion)
+          setLocationInfo({
+            country: manualRegion === 'continent' ? 'GH' : 'US',
+            source: 'manual-override',
+            loading: false
+          })
+          return
+        }
+
         const response = await fetch('/api/detect-location')
         if (response.ok) {
           const data = await response.json()
@@ -37,11 +53,14 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
           setLocationInfo({
             country: data.country,
             source: data.source,
-            loading: false
+            loading: false,
+            city: data.city
           })
         } else {
           const errorData = await response.json()
           console.error('❌ Location detection failed:', errorData)
+          // Default to diaspora when location detection fails
+          setDetectedRegion('diaspora')
           setLocationInfo({
             country: 'Unknown',
             source: 'error',
@@ -51,6 +70,8 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
         }
       } catch (error) {
         console.error('Failed to detect location:', error)
+        // Default to diaspora on network error
+        setDetectedRegion('diaspora')
         setLocationInfo({
           country: 'Unknown',
           source: 'error',
@@ -240,13 +261,22 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
       {/* Location Detection Info */}
       {!locationInfo.loading && !locationInfo.error && (
         <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-sm">
-            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-blue-800">
-              Showing {detectedRegion === 'continent' ? 'Africa' : 'International'} pricing based on your location ({locationInfo.country})
-            </span>
+          <div className="inline-flex flex-col items-center gap-2">
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-sm">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-blue-800">
+                Showing {detectedRegion === 'continent' ? 'Africa' : 'International'} pricing
+                {locationInfo.country !== 'Unknown' && ` (${locationInfo.country})`}
+                {locationInfo.city && locationInfo.city !== 'Unknown' && locationInfo.city !== 'Development' && ` - ${locationInfo.city}`}
+              </span>
+            </div>
+            {locationInfo.source && (
+              <div className="text-xs text-gray-500">
+                Detection: {locationInfo.source}
+              </div>
+            )}
           </div>
         </div>
       )}
