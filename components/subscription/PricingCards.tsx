@@ -281,8 +281,8 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
         </div>
       )}
 
-      {/* Billing Toggle - Show for Africa users (and temporarily for testing) */}
-      {(detectedRegion === 'continent' || true) && (
+      {/* Billing Toggle - Show only for Africa users */}
+      {detectedRegion === 'continent' && (
         <div className="flex justify-center mb-8">
           <div className="bg-gray-100 p-1 rounded-lg flex">
             <button
@@ -314,191 +314,162 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className={`border-4 p-8 relative ${
-          detectedRegion === 'diaspora' 
-            ? 'border-black bg-black text-white' 
-            : 'border-gray-300'
-        } ${loading !== null ? 'opacity-75' : ''} transition-all`}>
-          {detectedRegion === 'diaspora' && (
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold">
-              Recommended for You
+      {/* Show only the relevant pricing card based on detected region */}
+      <div className="max-w-md mx-auto">
+        {detectedRegion === 'diaspora' ? (
+          // Diaspora Plan Card
+          <div className="border-4 border-black bg-black text-white p-8 relative">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">Diaspora Plan</h2>
+              <p className="text-gray-300">
+                For readers outside Africa
+              </p>
             </div>
-          )}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Diaspora Plan</h2>
-            <p className={detectedRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>
-              For readers outside Africa
-            </p>
-          </div>
-          <div className="mb-6">
-            <span className="text-5xl font-bold">$5</span>
-            <span className={detectedRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>/month</span>
-          </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Unlimited premium articles</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Ad-free experience</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Weekly newsletter</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>14-day free trial</span>
-            </li>
-          </ul>
-          <form onSubmit={(e) => { e.preventDefault(); getButtonAction('diaspora_monthly')(); }}>
-            <button
-              type="submit"
-              disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
-              className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                detectedRegion === 'diaspora'
-                  ? 'bg-white text-black hover:bg-gray-200'
-                  : 'bg-black text-white hover:bg-gray-800'
-              }`}
-            >
-              {loading === 'diaspora_monthly' ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
-                </span>
-              ) : locationInfo.error ? 'Location Required' : getButtonText('diaspora_monthly')}
-            </button>
-          </form>
-        </div>
-
-        <div className={`border-4 p-8 relative ${
-          detectedRegion === 'continent' 
-            ? 'border-black bg-black text-white' 
-            : 'border-gray-300'
-        } ${loading !== null ? 'opacity-75' : ''} transition-all`}>
-          {detectedRegion === 'continent' && (
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold">
-              Recommended for You
+            <div className="mb-6">
+              <span className="text-5xl font-bold">$5</span>
+              <span className="text-gray-300">/month</span>
             </div>
-          )}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Continent Plan</h2>
-            <p className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
-              For readers in Africa
-            </p>
-          </div>
-          <div className="mb-6">
-            <span className="text-5xl font-bold">
-              {billingCycle === 'monthly' ? '₵16' : '₵160'}
-            </span>
-            <span className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
-              /{billingCycle === 'monthly' ? 'month' : 'year'}
-            </span>
-            {billingCycle === 'yearly' && (
-              <div className="text-sm mt-2">
-                <span className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
-                  Only ₵13.33/month
-                </span>
-              </div>
-            )}
-          </div>
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Unlimited premium articles</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Ad-free experience</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>Weekly newsletter</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">✓</span>
-              <span>14-day free trial</span>
-            </li>
-            {billingCycle === 'yearly' && (
+            <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <span className="mr-2">✓</span>
-                <span>Mobile Money supported</span>
+                <span>Unlimited premium articles</span>
               </li>
-            )}
-          </ul>
-          
-          {billingCycle === 'monthly' ? (
-            <div className="space-y-3">
-              <div className={`w-full py-3 px-4 font-bold text-center border-2 border-dashed ${
-                detectedRegion === 'continent'
-                  ? 'border-gray-400 text-gray-400'
-                  : 'border-gray-300 text-gray-500'
-              }`}>
-                Mobile Money Not Available
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>Ad-free experience</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>Weekly newsletter</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>14-day free trial</span>
+              </li>
+            </ul>
+            <form onSubmit={(e) => { e.preventDefault(); getButtonAction('diaspora_monthly')(); }}>
+              <button
+                type="submit"
+                disabled={loading !== null || trialEligibility.loading}
+                className="w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white text-black hover:bg-gray-200"
+              >
+                {loading === 'diaspora_monthly' ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
+                  </span>
+                ) : getButtonText('diaspora_monthly')}
+              </button>
+            </form>
+          </div>
+        ) : (
+          // Continent Plan Card
+          <div className="border-4 border-black bg-black text-white p-8 relative">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">Continent Plan</h2>
+              <p className="text-gray-300">
+                For readers in Africa
+              </p>
+            </div>
+            <div className="mb-6">
+              <span className="text-5xl font-bold">
+                {billingCycle === 'monthly' ? '₵16' : '₵160'}
+              </span>
+              <span className="text-gray-300">
+                /{billingCycle === 'monthly' ? 'month' : 'year'}
+              </span>
+              {billingCycle === 'yearly' && (
+                <div className="text-sm mt-2">
+                  <span className="text-gray-300">
+                    Only ₵13.33/month
+                  </span>
+                </div>
+              )}
+            </div>
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>Unlimited premium articles</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>Ad-free experience</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>Weekly newsletter</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">✓</span>
+                <span>14-day free trial</span>
+              </li>
+              {billingCycle === 'yearly' && (
+                <li className="flex items-start">
+                  <span className="mr-2">✓</span>
+                  <span>Mobile Money supported</span>
+                </li>
+              )}
+            </ul>
+            
+            {billingCycle === 'monthly' ? (
+              <div className="space-y-3">
+                <div className="w-full py-3 px-4 font-bold text-center border-2 border-dashed border-gray-400 text-gray-400">
+                  Mobile Money Not Available
+                </div>
+                <p className="text-xs text-center text-gray-300">
+                  Mobile Money payment is only available for yearly plans. Switch to yearly to pay with Mobile Money.
+                </p>
+                <form action="/api/checkout/paystack" method="POST" onSubmit={(e) => { e.preventDefault(); getButtonAction('continent_monthly')(); }}>
+                  <input type="hidden" name="plan" value="continent_monthly" />
+                  <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
+                  <button
+                    type="submit"
+                    disabled={loading !== null || trialEligibility.loading}
+                    className="w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white text-black hover:bg-gray-200"
+                  >
+                    {loading === 'continent_monthly' ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
+                      </span>
+                    ) : getButtonText('continent_monthly')}
+                  </button>
+                </form>
               </div>
-              <p className={`text-xs text-center ${detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
-                Mobile Money payment is only available for yearly plans. Switch to yearly to pay with Mobile Money.
-              </p>
-              <form action="/api/checkout/paystack" method="POST" onSubmit={(e) => { e.preventDefault(); getButtonAction('continent_monthly')(); }}>
-                <input type="hidden" name="plan" value="continent_monthly" />
-                <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
-                <button
-                  type="submit"
-                  disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
-                  className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    detectedRegion === 'continent'
-                      ? 'bg-white text-black hover:bg-gray-200'
-                      : 'bg-black text-white hover:bg-gray-800'
-                  }`}
-                >
-                  {loading === 'continent_monthly' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
-                    </span>
-                  ) : locationInfo.error ? 'Location Required' : getButtonText('continent_monthly')}
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <form action="/api/checkout/paystack" method="POST" onSubmit={(e) => { e.preventDefault(); getButtonAction('continent_yearly')(); }}>
-                <input type="hidden" name="plan" value="continent_yearly" />
-                <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
-                <button
-                  type="submit"
-                  disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
-                  className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    detectedRegion === 'continent'
-                      ? 'bg-white text-black hover:bg-gray-200'
-                      : 'bg-black text-white hover:bg-gray-800'
-                  }`}
-                >
-                  {loading === 'continent_yearly' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
-                    </span>
-                  ) : locationInfo.error ? 'Location Required' : getButtonText('continent_yearly')}
-                </button>
-              </form>
-              <p className={`text-xs text-center ${detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
-                14-day free trial, then Mobile Money and card payments available
-              </p>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="space-y-3">
+                <form action="/api/checkout/paystack" method="POST" onSubmit={(e) => { e.preventDefault(); getButtonAction('continent_yearly')(); }}>
+                  <input type="hidden" name="plan" value="continent_yearly" />
+                  <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
+                  <button
+                    type="submit"
+                    disabled={loading !== null || trialEligibility.loading}
+                    className="w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-white text-black hover:bg-gray-200"
+                  >
+                    {loading === 'continent_yearly' ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
+                      </span>
+                    ) : getButtonText('continent_yearly')}
+                  </button>
+                </form>
+                <p className="text-xs text-center text-gray-300">
+                  14-day free trial, then Mobile Money and card payments available
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Loading overlay when processing */}
