@@ -3,7 +3,7 @@ import { articles, users, articleViews } from '@/lib/db/schema'
 import { eq, and, gte, sql, ne } from 'drizzle-orm'
 import { auth } from '@/lib/auth'
 import { getSubscriptionAccessInfo } from '@/lib/subscription'
-import { getInlineAds } from '@/lib/ads'
+import { getInlineAds, getActiveAds } from '@/lib/ads'
 import { FREE_PREMIUM_ARTICLE_LIMIT } from '@/lib/constants'
 import { notFound } from 'next/navigation'
 import ArticleBody from '@/components/article/ArticleBody'
@@ -11,11 +11,13 @@ import PaywallOverlay from '@/components/article/PaywallOverlay'
 import VideoPlayer from '@/components/article/VideoPlayer'
 import RelatedArticles from '@/components/article/RelatedArticles'
 import InlineAds from '@/components/ads/InlineAds'
-import ArticleAds from '@/components/ads/ArticleAds'
+import ArticleSidebarAds from '@/components/ads/ArticleSidebarAds'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 
-export const revalidate = 300
+// Force dynamic rendering for ads
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateMetadata({
   params,
@@ -91,6 +93,7 @@ export default async function ArticlePage({
   let subscriptionInfo = null
   let remainingFreeArticles = 0
   let showAds = true // Default to showing ads for anonymous users
+  let sidebarAds: any[] = []
   let inlineAds: any[] = []
 
   // Check if user should see ads (unsubscribed users)
@@ -99,9 +102,10 @@ export default async function ArticlePage({
     showAds = !userSubscriptionInfo.hasAccess
   }
 
-  // Get inline ads if user should see them
+  // Get ads if user should see them
   if (showAds) {
-    inlineAds = await getInlineAds('unsubscribed', 3)
+    sidebarAds = await getActiveAds('sidebar', 'unsubscribed', 10) // Sidebar ads
+    inlineAds = await getActiveAds('inline', 'unsubscribed', 5) // Inline ads for article content
   }
 
   // Fetch related articles from the same category
@@ -202,147 +206,224 @@ export default async function ArticlePage({
   }
 
   return (
-    <article className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <span className="text-sm font-semibold uppercase tracking-wide">
-          {articleData.category}
-        </span>
-        {articleData.accessLevel === 'premium' && (
-          <span className="ml-2 text-xs bg-black text-white px-2 py-1">
-            PREMIUM
-          </span>
-        )}
-      </div>
-
-      <h1 className="font-playfair text-5xl md:text-6xl font-bold mb-4 leading-tight">
-        {articleData.title}
-      </h1>
-
-      {articleData.excerpt && (
-        <p className="text-xl text-gray-600 mb-6">{articleData.excerpt}</p>
-      )}
-
-      <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-200">
-        {articleData.authorAvatar && (
-          <Image
-            src={articleData.authorAvatar}
-            alt={articleData.authorName || 'Author'}
-            width={40}
-            height={40}
-            className="rounded-full"
-          />
-        )}
-        <div className="flex-1">
-          <p className="font-semibold">{articleData.authorName || 'Anonymous'}</p>
-          <div className="text-sm text-gray-500">
-            <span>
-              {articleData.publishedAt?.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+    <div className="max-w-7xl mx-auto px-4">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Main Article Content - 80% on desktop, 100% on mobile */}
+        <article className="w-full lg:w-[80%]">
+          <div className="mb-6">
+            <span className="text-sm font-semibold uppercase tracking-wide">
+              {articleData.category}
             </span>
+            {articleData.accessLevel === 'premium' && (
+              <span className="ml-2 text-xs bg-black text-white px-2 py-1">
+                PREMIUM
+              </span>
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* Content area with paywall overlay */}
-      <div className="relative">
-        {showPaywall ? (
-          // Show actual content with paywall overlay
+          <h1 className="font-playfair text-5xl md:text-6xl font-bold mb-4 leading-tight">
+            {articleData.title}
+          </h1>
+
+          {articleData.excerpt && (
+            <p className="text-xl text-gray-600 mb-6">{articleData.excerpt}</p>
+          )}
+
+          <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-200">
+            {articleData.authorAvatar && (
+              <Image
+                src={articleData.authorAvatar}
+                alt={articleData.authorName || 'Author'}
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
+            )}
+            <div className="flex-1">
+              <p className="font-semibold">{articleData.authorName || 'Anonymous'}</p>
+              <div className="text-sm text-gray-500">
+                <span>
+                  {articleData.publishedAt?.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Content area with paywall overlay */}
           <div className="relative">
-            {/* Actual content (blurred and non-interactive) */}
-            <div className="filter blur-sm pointer-events-none select-none">
-              {/* Video or Cover Image */}
-              {articleData.videoUrl ? (
-                <div className="mb-8">
-                  <VideoPlayer
-                    videoUrl={articleData.videoUrl}
-                    videoType={articleData.videoType || 'upload'}
-                    title={articleData.title}
+            {showPaywall ? (
+              // Show actual content with paywall overlay
+              <div className="relative">
+                {/* Actual content (blurred and non-interactive) */}
+                <div className="filter blur-sm pointer-events-none select-none">
+                  {/* Video or Cover Image */}
+                  {articleData.videoUrl ? (
+                    <div className="mb-8">
+                      <VideoPlayer
+                        videoUrl={articleData.videoUrl}
+                        videoType={articleData.videoType || 'upload'}
+                        title={articleData.title}
+                      />
+                    </div>
+                  ) : articleData.coverImageUrl ? (
+                    <div className="mb-8">
+                      <Image
+                        src={articleData.coverImageUrl}
+                        alt={articleData.title}
+                        width={800}
+                        height={450}
+                        className="w-full h-auto rounded-lg"
+                        priority
+                      />
+                    </div>
+                  ) : null}
+
+                  {/* Actual article content (blurred) */}
+                  <ArticleBody 
+                    body={articleData.body} 
+                    truncate={false}
                   />
                 </div>
-              ) : articleData.coverImageUrl ? (
-                <div className="mb-8">
-                  <Image
-                    src={articleData.coverImageUrl}
-                    alt={articleData.title}
-                    width={800}
-                    height={450}
-                    className="w-full h-auto rounded-lg"
-                    priority
+
+                {/* Semi-transparent paywall overlay */}
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                  <PaywallOverlay 
+                    hasSession={!!session}
+                    subscriptionStatus={subscriptionInfo?.status}
+                    isTrialing={subscriptionInfo?.isTrialing}
+                    trialEndsAt={subscriptionInfo?.trialEndsAt}
                   />
                 </div>
-              ) : null}
+              </div>
+            ) : (
+              // Show full content for subscribers
+              <>
+                {/* Video or Cover Image */}
+                {articleData.videoUrl ? (
+                  <div className="mb-8">
+                    <VideoPlayer
+                      videoUrl={articleData.videoUrl}
+                      videoType={articleData.videoType || 'upload'}
+                      title={articleData.title}
+                    />
+                  </div>
+                ) : articleData.coverImageUrl ? (
+                  <div className="mb-8">
+                    <Image
+                      src={articleData.coverImageUrl}
+                      alt={articleData.title}
+                      width={800}
+                      height={450}
+                      className="w-full h-auto rounded-lg"
+                      priority
+                    />
+                  </div>
+                ) : null}
 
-              {/* Actual article content (blurred) */}
-              <ArticleBody 
-                body={articleData.body} 
-                truncate={false}
-              />
-            </div>
+                <ArticleBody 
+                  body={articleData.body} 
+                  truncate={false}
+                />
 
-            {/* Semi-transparent paywall overlay */}
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
-              <PaywallOverlay 
-                hasSession={!!session}
-                subscriptionStatus={subscriptionInfo?.status}
-                isTrialing={subscriptionInfo?.isTrialing}
-                trialEndsAt={subscriptionInfo?.trialEndsAt}
-              />
-            </div>
+                {/* Inline ads within article content for unsubscribed users */}
+                {inlineAds.length > 0 && (
+                  <div className="my-8">
+                    <InlineAds 
+                      showAds={showAds} 
+                      initialAds={inlineAds} 
+                      position="middle" 
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          // Show full content for subscribers
-          <>
-            {/* Video or Cover Image */}
-            {articleData.videoUrl ? (
-              <div className="mb-8">
-                <VideoPlayer
-                  videoUrl={articleData.videoUrl}
-                  videoType={articleData.videoType || 'upload'}
-                  title={articleData.title}
-                />
-              </div>
-            ) : articleData.coverImageUrl ? (
-              <div className="mb-8">
-                <Image
-                  src={articleData.coverImageUrl}
-                  alt={articleData.title}
-                  width={800}
-                  height={450}
-                  className="w-full h-auto rounded-lg"
-                  priority
-                />
-              </div>
-            ) : null}
 
-            <ArticleBody 
-              body={articleData.body} 
-              truncate={false}
-            />
+          {/* Related Articles Section */}
+          <RelatedArticles 
+            articles={relatedArticles} 
+            currentArticleId={articleData.id} 
+          />
 
-            {/* Inline ads for unsubscribed users */}
-            <InlineAds 
-              showAds={showAds} 
-              initialAds={inlineAds} 
-              position="bottom" 
-            />
-          </>
+          {/* Mobile Sidebar Ads - Show all available ads on mobile */}
+          {showAds && sidebarAds.length > 0 && (
+            <div className="lg:hidden mt-8">
+              <div className="text-center mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  Sponsored
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {sidebarAds.map((ad) => (
+                  <div key={ad.id} className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    {ad.imageUrl && (
+                      <div className="aspect-video relative bg-gray-100">
+                        <img
+                          src={ad.imageUrl}
+                          alt={ad.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="p-4">
+                      <div className="mb-2">
+                        <span className="inline-block bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
+                          AD
+                        </span>
+                      </div>
+                      
+                      <h3 className="font-bold text-sm mb-2 line-clamp-2">
+                        {ad.title}
+                      </h3>
+                      
+                      {ad.description && (
+                        <p className="text-gray-600 text-xs mb-3 line-clamp-2">
+                          {ad.description}
+                        </p>
+                      )}
+                      
+                      {ad.linkUrl && (
+                        <a
+                          href={`/api/ads/${ad.id}/click?redirect=${encodeURIComponent(ad.linkUrl)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-xs"
+                        >
+                          {ad.buttonText || 'Learn More'}
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-center mt-4">
+                <a
+                  href="/advertise"
+                  className="text-xs text-gray-500 hover:text-gray-700 underline"
+                >
+                  Advertise with us
+                </a>
+              </div>
+            </div>
+          )}
+        </article>
+
+        {/* Right Sidebar - Ads for unpaid users - Desktop only */}
+        {showAds && sidebarAds.length > 0 && (
+          <aside className="hidden lg:block lg:w-[20%]">
+            <ArticleSidebarAds ads={sidebarAds} />
+          </aside>
         )}
       </div>
-
-      {/* Compact ads section for unsubscribed users */}
-      <ArticleAds 
-        showAds={showAds} 
-        initialAds={inlineAds} 
-      />
-
-      {/* Related Articles Section */}
-      <RelatedArticles 
-        articles={relatedArticles} 
-        currentArticleId={articleData.id} 
-      />
-    </article>
+    </div>
   )
 }

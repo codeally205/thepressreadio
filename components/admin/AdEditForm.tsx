@@ -58,21 +58,39 @@ export default function AdEditForm({ ad }: AdEditFormProps) {
     e.preventDefault()
     setIsSubmitting(true)
 
+    console.log('Form submission - Current formData:', {
+      position: formData.position,
+      priority: formData.priority,
+      title: formData.title
+    })
+
     try {
+      const payload = {
+        ...formData,
+        priority: parseInt(formData.priority.toString()),
+        startDate: formData.startDate || null,
+        endDate: formData.endDate || null,
+      }
+
+      console.log('Sending payload to API:', {
+        position: payload.position,
+        priority: payload.priority
+      })
+
       const response = await fetch(`/api/admin/ads/${ad.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          priority: parseInt(formData.priority.toString()),
-          startDate: formData.startDate || null,
-          endDate: formData.endDate || null,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log('API response:', {
+          position: result.position,
+          priority: result.priority
+        })
         router.push('/admin/ads')
         router.refresh()
       } else {
@@ -231,6 +249,7 @@ export default function AdEditForm({ ad }: AdEditFormProps) {
                 <option value="sidebar">Sidebar</option>
                 <option value="inline">Article Content</option>
               </select>
+              <p className="text-xs text-gray-500 mt-1">Current: {formData.position}</p>
             </div>
 
             <div>

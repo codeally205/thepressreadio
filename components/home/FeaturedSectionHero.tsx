@@ -119,7 +119,7 @@ export default function FeaturedSectionHero({ category, articles, showViewAll = 
                 </p>
               )}
 
-              {/* Bottom Row: Date + Circular Author Avatar + "by Lucas" */}
+              {/* Bottom Row: Date */}
               {heroArticle.publishedAt && (
                 <div className="flex items-center gap-3 text-sm text-gray-500 mt-auto">
                   <span>
@@ -129,12 +129,6 @@ export default function FeaturedSectionHero({ category, articles, showViewAll = 
                       year: 'numeric',
                     })}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-gray-600">L</span>
-                    </div>
-                    <span className="text-sm">by Lucas</span>
-                  </div>
                 </div>
               )}
             </article>

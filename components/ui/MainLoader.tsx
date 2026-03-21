@@ -3,40 +3,40 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
-interface MainLoaderProps {
-  isContentLoaded?: boolean
-}
-
-export default function MainLoader({ isContentLoaded = false }: MainLoaderProps) {
+export default function MainLoader() {
   const [isVisible, setIsVisible] = useState(true)
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
 
   useEffect(() => {
-    // Ensure loader shows for at least 1.5 seconds for better UX
-    const minTimer = setTimeout(() => {
-      setMinTimeElapsed(true)
-    }, 1500)
+    // Hide loader after DOM is interactive and minimum time has elapsed
+    const minTime = 1000 // 1 second minimum
+    const startTime = Date.now()
 
-    return () => clearTimeout(minTimer)
-  }, [])
+    const checkAndHide = () => {
+      const elapsed = Date.now() - startTime
+      const remainingTime = Math.max(0, minTime - elapsed)
 
-  useEffect(() => {
-    // Hide loader only when both conditions are met:
-    // 1. Minimum time has elapsed
-    // 2. Content is loaded
-    if (minTimeElapsed && isContentLoaded) {
-      const hideTimer = setTimeout(() => {
+      setTimeout(() => {
         setIsVisible(false)
-      }, 300) // Small delay for smooth transition
-
-      return () => clearTimeout(hideTimer)
+      }, remainingTime)
     }
-  }, [minTimeElapsed, isContentLoaded])
+
+    // Check if DOM is already interactive or complete
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+      checkAndHide()
+    } else {
+      // Wait for DOM to be interactive (not all resources loaded)
+      const handleDOMReady = () => {
+        checkAndHide()
+      }
+      document.addEventListener('DOMContentLoaded', handleDOMReady)
+      return () => document.removeEventListener('DOMContentLoaded', handleDOMReady)
+    }
+  }, [])
 
   if (!isVisible) return null
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center">
       <div className="text-center">
         {/* Real Logo with animation */}
         <div className="relative w-32 h-32 mx-auto mb-8">

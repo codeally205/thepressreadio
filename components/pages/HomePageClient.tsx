@@ -49,7 +49,7 @@ export default function HomePageClient({ children, articlesCount }: HomePageClie
       <AdminRedirectClient />
       {!shouldHideContent && (
         <>
-          {showMainLoader && <MainLoader isContentLoaded={isContentLoaded} />}
+          {showMainLoader && <MainLoader />}
           {children}
         </>
       )}

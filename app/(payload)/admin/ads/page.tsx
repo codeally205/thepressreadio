@@ -5,6 +5,10 @@ import { ads, users } from '@/lib/db/schema'
 import { desc, eq } from 'drizzle-orm'
 import AdsList from '@/components/admin/AdsList'
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getAds() {
   return await db
     .select({

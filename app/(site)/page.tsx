@@ -13,10 +13,13 @@ import Sidebar from '@/components/layout/Sidebar'
 import HomePageClient from '@/components/pages/HomePageClient'
 import VideoPreview from '@/components/home/VideoPreview'
 import AdsSidebar from '@/components/ads/AdsSidebar'
+import LiveCommodities from '@/components/home/LiveCommodities'
 import Link from 'next/link'
 import Image from 'next/image'
 
-// export const revalidate = 60 // Temporarily disabled for debugging
+// Force dynamic rendering to prevent caching of ads
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function HomePage() {
   const session = await auth()
@@ -162,78 +165,9 @@ export default async function HomePage() {
             )}
           </div>
 
-          {/* Left Column - 2 Secondary Articles - Second on mobile, left on desktop */}
-          <div className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-6 self-stretch">
-            {allArticles.slice(1, 3).map((article, index) => (
-              <Link key={article.id} href={`/article/${article.slug}`} className="group block flex-1">
-                <article className="flex flex-col h-full">
-                  {(article.coverImageUrl || article.videoUrl) && (
-                    <div className="aspect-[4/3] relative overflow-hidden bg-gray-100 mb-3">
-                      {article.videoUrl ? (
-                        // Show video for video articles
-                        <>
-                          {article.videoType === 'upload' ? (
-                            <video
-                              src={article.videoUrl}
-                              className="w-full h-full object-cover"
-                              muted
-                              loop
-                              autoPlay
-                              playsInline
-                            />
-                          ) : article.videoType === 'youtube' ? (
-                            <img
-                              src={`https://img.youtube.com/vi/${
-                                article.videoUrl.includes('v=') 
-                                  ? article.videoUrl.split('v=')[1]?.split('&')[0]
-                                  : article.videoUrl.split('/').pop()
-                              }/maxresdefault.jpg`}
-                              alt={article.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                              <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                            <div className="bg-white bg-opacity-90 rounded-full p-2 group-hover:bg-opacity-100 transition-all duration-300">
-                              <svg className="w-6 h-6 text-gray-800" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        // Show image for image articles
-                        <Image
-                          src={article.coverImageUrl!}
-                          alt={article.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 300px, 200px"
-                        />
-                      )}
-                    </div>
-                  )}
-                  <span className="text-xs font-bold uppercase tracking-wider text-brand mb-2 block">
-                    {article.category}
-                  </span>
-                  <h3 className="font-bold text-base mb-2 flex-1 line-clamp-2 group-hover:text-brand transition leading-tight">
-                    {article.title}
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    {article.publishedAt?.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </article>
-              </Link>
-            ))}
+          {/* Left Column - Live Commodities Table - Second on mobile, left on desktop */}
+          <div className="order-2 lg:order-1 lg:col-span-3 self-stretch">
+            <LiveCommodities />
           </div>
 
           {/* Right Column - Latest/Ads Section - Third on mobile, right on desktop */}

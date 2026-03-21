@@ -1,8 +1,9 @@
 import { db } from '@/lib/db'
 import { articles } from '@/lib/db/schema'
-import { eq, desc, and } from 'drizzle-orm'
+import { eq, desc, and, count } from 'drizzle-orm'
 import ArticleCard from '@/components/article/ArticleCard'
 import FeaturedSectionHero from '@/components/home/FeaturedSectionHero'
+import Pagination from '@/components/ui/Pagination'
 import { notFound } from 'next/navigation'
 
 export const revalidate = 60
@@ -18,6 +19,8 @@ const categories = [
   'environment',
 ]
 
+const ARTICLES_PER_PAGE = 9
+
 export async function generateStaticParams() {
   return categories.map((category) => ({
     category,
@@ -26,8 +29,10 @@ export async function generateStaticParams() {
 
 export default async function CategoryPage({
   params,
+  searchParams,
 }: {
   params: { category: string }
+  searchParams: { page?: string }
 }) {
   // Exclude specific routes that have their own pages
   if (params.category === 'latest' || params.category === 'newsletter' || params.category === 'account') {
@@ -37,6 +42,23 @@ export default async function CategoryPage({
   if (!categories.includes(params.category)) {
     notFound()
   }
+
+  const currentPage = Number(searchParams.page) || 1
+  const offset = (currentPage - 1) * ARTICLES_PER_PAGE
+
+  // Get total count for pagination
+  const [totalCountResult] = await db
+    .select({ count: count() })
+    .from(articles)
+    .where(
+      and(
+        eq(articles.category, params.category),
+        eq(articles.status, 'published')
+      )
+    )
+
+  const totalArticles = totalCountResult.count
+  const totalPages = Math.ceil(totalArticles / ARTICLES_PER_PAGE)
 
   const categoryArticles = await db
     .select({
@@ -59,10 +81,11 @@ export default async function CategoryPage({
       )
     )
     .orderBy(desc(articles.publishedAt))
-    .limit(12)
+    .limit(ARTICLES_PER_PAGE)
+    .offset(offset)
 
   // Special layout for politics category
-  if (params.category === 'politics' && categoryArticles.length >= 5) {
+  if (params.category === 'politics' && categoryArticles.length >= 5 && currentPage === 1) {
     return (
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
         <div className="space-y-8">
@@ -85,12 +108,18 @@ export default async function CategoryPage({
               </div>
             </div>
           )}
+
+          {/* Pagination */}
+          <Pagination 
+            currentPage={currentPage} 
+            totalPages={totalPages}
+          />
         </div>
       </div>
     )
   }
 
-  // Standard layout for other categories
+  // Standard layout for other categories or politics page 2+
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
       <h1 className="text-4xl font-bold mb-8 border-b-4 border-black pb-2 capitalize">
@@ -101,6 +130,12 @@ export default async function CategoryPage({
           <ArticleCard key={article.id} article={article} />
         ))}
       </div>
+
+      {/* Pagination */}
+      <Pagination 
+        currentPage={currentPage} 
+        totalPages={totalPages}
+      />
     </div>
   )
 }

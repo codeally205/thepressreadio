@@ -54,9 +54,16 @@ export async function PATCH(
     const { id } = params
     const data = await request.json()
 
+    // Debug logging
+    console.log('PATCH /api/admin/ads/[id] - Received data:', {
+      id,
+      position: data.position,
+      allData: data
+    })
+
     // Check if ad exists
     const existingAd = await db
-      .select({ id: ads.id })
+      .select()
       .from(ads)
       .where(eq(ads.id, id))
       .limit(1)
@@ -65,17 +72,29 @@ export async function PATCH(
       return NextResponse.json({ error: 'Ad not found' }, { status: 404 })
     }
 
+    console.log('Existing ad position:', existingAd[0].position)
+
+    // Prepare update data
+    const updateData: any = {
+      ...data,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      updatedAt: new Date(),
+    }
+
+    console.log('Update data being sent to DB:', {
+      position: updateData.position,
+      priority: updateData.priority
+    })
+
     // Update the ad
     const updatedAd = await db
       .update(ads)
-      .set({
-        ...data,
-        startDate: data.startDate ? new Date(data.startDate) : undefined,
-        endDate: data.endDate ? new Date(data.endDate) : undefined,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(ads.id, id))
       .returning()
+
+    console.log('Updated ad position:', updatedAd[0].position)
 
     return NextResponse.json(updatedAd[0])
   } catch (error) {

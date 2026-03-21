@@ -4,6 +4,10 @@ import { ads } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import AdEditForm from '@/components/admin/AdEditForm'
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface EditAdPageProps {
   params: {
     id: string

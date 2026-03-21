@@ -4,6 +4,7 @@ import './globals.css'
 import { LoadingProvider } from '@/components/providers/LoadingProvider'
 import SessionProvider from '@/components/providers/SessionProvider'
 import { ToastProvider } from '@/components/ui/Toast'
+import MainLoader from '@/components/ui/MainLoader'
 
 const inter = Inter({ subsets: ['latin'] })
 const playfair = Playfair_Display({ 
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} ${playfair.variable}`}>
+        <MainLoader />
         <SessionProvider>
           <ToastProvider>
             <LoadingProvider>

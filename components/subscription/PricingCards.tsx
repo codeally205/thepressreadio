@@ -6,16 +6,62 @@ interface PricingCardsProps {
   userRegion?: 'diaspora' | 'continent'
   userId?: string
   currentSubscription?: any
+  detectedCountry?: string
 }
 
-export default function PricingCards({ userRegion = 'diaspora', userId, currentSubscription }: PricingCardsProps) {
+export default function PricingCards({ userRegion = 'diaspora', userId, currentSubscription, detectedCountry }: PricingCardsProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [detectedRegion, setDetectedRegion] = useState<'diaspora' | 'continent'>(userRegion)
+  const [locationInfo, setLocationInfo] = useState<{
+    country: string
+    source: string
+    loading: boolean
+    error?: string
+  }>({ country: detectedCountry || 'US', source: 'server', loading: true })
   const [trialEligibility, setTrialEligibility] = useState<{
     isEligible: boolean
     hasExpiredTrial: boolean
     loading: boolean
   }>({ isEligible: false, hasExpiredTrial: false, loading: true })
+
+  // Detect location on client side for better accuracy
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const response = await fetch('/api/detect-location')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('🌍 Client-side location detection:', data)
+          setDetectedRegion(data.region)
+          setLocationInfo({
+            country: data.country,
+            source: data.source,
+            loading: false
+          })
+        } else {
+          const errorData = await response.json()
+          console.error('❌ Location detection failed:', errorData)
+          setLocationInfo({
+            country: 'Unknown',
+            source: 'error',
+            loading: false,
+            error: errorData.message || 'Failed to detect location'
+          })
+        }
+      } catch (error) {
+        console.error('Failed to detect location:', error)
+        setLocationInfo({
+          country: 'Unknown',
+          source: 'error',
+          loading: false,
+          error: 'Network error while detecting location'
+        })
+      }
+    }
+
+    detectLocation()
+  }, [])
 
   // Check trial eligibility when component mounts
   useEffect(() => {
@@ -161,8 +207,52 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Location Detection Error */}
+      {locationInfo.error && (
+        <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+          <div className="flex items-start gap-3">
+            <svg className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 mb-1">Location Detection Required</h3>
+              <p className="text-red-800 text-sm mb-3">{locationInfo.error}</p>
+              <div className="space-y-2 text-sm text-red-800">
+                <p>To subscribe, we need to detect your location to show you the correct pricing:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Disable any VPN or proxy services</li>
+                  <li>Ensure your browser allows location services</li>
+                  <li>Check your internet connection</li>
+                  <li>Try refreshing the page</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Retry Location Detection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Detection Info */}
+      {!locationInfo.loading && !locationInfo.error && (
+        <div className="mb-6 text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-sm">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-blue-800">
+              Showing {detectedRegion === 'continent' ? 'Africa' : 'International'} pricing based on your location ({locationInfo.country})
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Billing Toggle - Show for Africa users (and temporarily for testing) */}
-      {(userRegion === 'continent' || true) && (
+      {(detectedRegion === 'continent' || true) && (
         <div className="flex justify-center mb-8">
           <div className="bg-gray-100 p-1 rounded-lg flex">
             <button
@@ -195,16 +285,25 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
       )}
 
       <div className="grid md:grid-cols-2 gap-8">
-        <div className={`border-4 border-black p-8 ${userRegion === 'diaspora' ? 'bg-black text-white' : ''} ${loading !== null ? 'opacity-75' : ''} transition-opacity`}>
+        <div className={`border-4 p-8 relative ${
+          detectedRegion === 'diaspora' 
+            ? 'border-black bg-black text-white' 
+            : 'border-gray-300'
+        } ${loading !== null ? 'opacity-75' : ''} transition-all`}>
+          {detectedRegion === 'diaspora' && (
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+              Recommended for You
+            </div>
+          )}
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2">Diaspora Plan</h2>
-            <p className={userRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>
+            <p className={detectedRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>
               For readers outside Africa
             </p>
           </div>
           <div className="mb-6">
             <span className="text-5xl font-bold">$5</span>
-            <span className={userRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>/month</span>
+            <span className={detectedRegion === 'diaspora' ? 'text-gray-300' : 'text-gray-600'}>/month</span>
           </div>
           <ul className="space-y-3 mb-8">
             <li className="flex items-start">
@@ -227,9 +326,9 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
           <form onSubmit={(e) => { e.preventDefault(); getButtonAction('diaspora_monthly')(); }}>
             <button
               type="submit"
-              disabled={loading !== null || trialEligibility.loading}
+              disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
               className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                userRegion === 'diaspora'
+                detectedRegion === 'diaspora'
                   ? 'bg-white text-black hover:bg-gray-200'
                   : 'bg-black text-white hover:bg-gray-800'
               }`}
@@ -242,15 +341,24 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
                   </svg>
                   {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
                 </span>
-              ) : getButtonText('diaspora_monthly')}
+              ) : locationInfo.error ? 'Location Required' : getButtonText('diaspora_monthly')}
             </button>
           </form>
         </div>
 
-        <div className={`border-4 border-black p-8 ${userRegion === 'continent' ? 'bg-black text-white' : ''} ${loading !== null ? 'opacity-75' : ''} transition-opacity`}>
+        <div className={`border-4 p-8 relative ${
+          detectedRegion === 'continent' 
+            ? 'border-black bg-black text-white' 
+            : 'border-gray-300'
+        } ${loading !== null ? 'opacity-75' : ''} transition-all`}>
+          {detectedRegion === 'continent' && (
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+              Recommended for You
+            </div>
+          )}
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2">Continent Plan</h2>
-            <p className={userRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
+            <p className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
               For readers in Africa
             </p>
           </div>
@@ -258,12 +366,12 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
             <span className="text-5xl font-bold">
               {billingCycle === 'monthly' ? '₵16' : '₵160'}
             </span>
-            <span className={userRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
+            <span className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
               /{billingCycle === 'monthly' ? 'month' : 'year'}
             </span>
             {billingCycle === 'yearly' && (
               <div className="text-sm mt-2">
-                <span className={userRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
+                <span className={detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}>
                   Only ₵13.33/month
                 </span>
               </div>
@@ -297,13 +405,13 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
           {billingCycle === 'monthly' ? (
             <div className="space-y-3">
               <div className={`w-full py-3 px-4 font-bold text-center border-2 border-dashed ${
-                userRegion === 'continent'
+                detectedRegion === 'continent'
                   ? 'border-gray-400 text-gray-400'
                   : 'border-gray-300 text-gray-500'
               }`}>
                 Mobile Money Not Available
               </div>
-              <p className={`text-xs text-center ${userRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-xs text-center ${detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
                 Mobile Money payment is only available for yearly plans. Switch to yearly to pay with Mobile Money.
               </p>
               <form action="/api/checkout/paystack" method="POST" onSubmit={(e) => { e.preventDefault(); getButtonAction('continent_monthly')(); }}>
@@ -311,9 +419,9 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
                 <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
                 <button
                   type="submit"
-                  disabled={loading !== null || trialEligibility.loading}
+                  disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
                   className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    userRegion === 'continent'
+                    detectedRegion === 'continent'
                       ? 'bg-white text-black hover:bg-gray-200'
                       : 'bg-black text-white hover:bg-gray-800'
                   }`}
@@ -326,7 +434,7 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
                       </svg>
                       {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
                     </span>
-                  ) : getButtonText('continent_monthly')}
+                  ) : locationInfo.error ? 'Location Required' : getButtonText('continent_monthly')}
                 </button>
               </form>
             </div>
@@ -337,9 +445,9 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
                 <input type="hidden" name="startTrial" value={trialEligibility.isEligible ? "true" : "false"} />
                 <button
                   type="submit"
-                  disabled={loading !== null || trialEligibility.loading}
+                  disabled={loading !== null || trialEligibility.loading || !!locationInfo.error}
                   className={`w-full py-3 px-4 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    userRegion === 'continent'
+                    detectedRegion === 'continent'
                       ? 'bg-white text-black hover:bg-gray-200'
                       : 'bg-black text-white hover:bg-gray-800'
                   }`}
@@ -352,10 +460,10 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
                       </svg>
                       {trialEligibility.isEligible ? 'Starting Trial...' : 'Processing...'}
                     </span>
-                  ) : getButtonText('continent_yearly')}
+                  ) : locationInfo.error ? 'Location Required' : getButtonText('continent_yearly')}
                 </button>
               </form>
-              <p className={`text-xs text-center ${userRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-xs text-center ${detectedRegion === 'continent' ? 'text-gray-300' : 'text-gray-600'}`}>
                 14-day free trial, then Mobile Money and card payments available
               </p>
             </div>
