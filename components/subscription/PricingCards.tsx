@@ -261,22 +261,14 @@ export default function PricingCards({ userRegion = 'diaspora', userId, currentS
       {/* Location Detection Info */}
       {!locationInfo.loading && !locationInfo.error && (
         <div className="mb-6 text-center">
-          <div className="inline-flex flex-col items-center gap-2">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-sm">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-blue-800">
-                Showing {detectedRegion === 'continent' ? 'Africa' : 'International'} pricing
-                {locationInfo.country !== 'Unknown' && ` (${locationInfo.country})`}
-                {locationInfo.city && locationInfo.city !== 'Unknown' && locationInfo.city !== 'Development' && ` - ${locationInfo.city}`}
-              </span>
-            </div>
-            {locationInfo.source && (
-              <div className="text-xs text-gray-500">
-                Detection: {locationInfo.source}
-              </div>
-            )}
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-lg text-sm">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="text-blue-800">
+              {detectedRegion === 'continent' ? 'Africa' : 'International'} Pricing
+            </span>
           </div>
         </div>
       )}
