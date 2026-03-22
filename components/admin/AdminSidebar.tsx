@@ -40,7 +40,7 @@ export default function AdminSidebar({ userRole, collapsed, onToggle }: AdminSid
       {/* Sidebar */}
       <div className={`
         ${collapsed ? 'w-0 -translate-x-full lg:translate-x-0 lg:w-16' : 'w-56'} 
-        bg-black rounded-r-3xl min-h-screen transition-all duration-300 relative
+        bg-black rounded-r-3xl h-full transition-all duration-300 relative
         ${collapsed ? 'lg:rounded-r-lg' : ''}
       `}>
         <div className={`px-3 ${collapsed ? 'lg:px-1' : ''}`}>

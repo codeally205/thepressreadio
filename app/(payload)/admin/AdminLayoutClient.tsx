@@ -16,13 +16,22 @@ export default function AdminLayoutClient({ children, user }: AdminLayoutClientP
   return (
     <ToastProvider>
       <div className="min-h-screen bg-white">
-        <AdminHeader user={user} />
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-50 bg-white">
+          <AdminHeader user={user} />
+        </div>
+        
         <div className="flex">
-          <AdminSidebar 
-            userRole={user.role} 
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
+          {/* Sticky Sidebar */}
+          <div className="sticky top-[64px] h-[calc(100vh-64px)] overflow-y-auto">
+            <AdminSidebar 
+              userRole={user.role} 
+              collapsed={sidebarCollapsed}
+              onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            />
+          </div>
+          
+          {/* Main Content */}
           <main className={`flex-1 p-8 transition-all duration-300 ${sidebarCollapsed ? 'ml-0' : ''}`}>
             <div className="max-w-7xl mx-auto">
               {children}

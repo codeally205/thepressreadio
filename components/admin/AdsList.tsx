@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { EyeIcon, PencilIcon, TrashIcon, ArrowPathIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 import SafeAdImage from '@/components/admin/SafeAdImage'
+import AdsFilter from './AdsFilter'
 
 interface Ad {
   id: string
@@ -32,6 +33,7 @@ interface AdsListProps {
 
 export default function AdsList({ initialAds }: AdsListProps) {
   const [ads, setAds] = useState<Ad[]>(initialAds)
+  const [filteredAds, setFilteredAds] = useState<Ad[]>(initialAds)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -42,6 +44,7 @@ export default function AdsList({ initialAds }: AdsListProps) {
       if (response.ok) {
         const data = await response.json()
         setAds(data)
+        setFilteredAds(data)
       }
     } catch (error) {
       console.error('Failed to refresh ads:', error)
@@ -62,7 +65,9 @@ export default function AdsList({ initialAds }: AdsListProps) {
       })
 
       if (response.ok) {
-        setAds(ads.filter(a => a.id !== id))
+        const updatedAds = ads.filter(a => a.id !== id)
+        setAds(updatedAds)
+        setFilteredAds(updatedAds)
       } else {
         const error = await response.json()
         alert(`Failed to delete ad: ${error.error}`)
@@ -88,9 +93,11 @@ export default function AdsList({ initialAds }: AdsListProps) {
       })
 
       if (response.ok) {
-        setAds(ads.map(ad => 
+        const updatedAds = ads.map(ad => 
           ad.id === id ? { ...ad, status: newStatus } : ad
-        ))
+        )
+        setAds(updatedAds)
+        setFilteredAds(updatedAds)
       } else {
         const error = await response.json()
         alert(`Failed to update ad status: ${error.error}`)
@@ -113,21 +120,26 @@ export default function AdsList({ initialAds }: AdsListProps) {
 
   return (
     <div className="bg-white border border-gray-200">
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-medium text-black">
-          All Ads ({ads.length})
-        </h3>
-        <button
-          onClick={refreshAds}
-          disabled={isRefreshing}
-          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ArrowPathIcon className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h3 className="text-lg font-medium text-black">
+            All Ads ({filteredAds.length} of {ads.length})
+          </h3>
+          <div className="flex items-center gap-4">
+            <AdsFilter ads={ads} onFilter={setFilteredAds} />
+            <button
+              onClick={refreshAds}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
       </div>
       
-      {ads.length > 0 ? (
+      {filteredAds.length > 0 ? (
         <>
           {/* Desktop Table View */}
           <div className="hidden lg:block overflow-x-auto">
@@ -153,7 +165,7 @@ export default function AdsList({ initialAds }: AdsListProps) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {ads.map((ad) => (
+                  {filteredAds.map((ad) => (
                     <tr key={ad.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4">
                         <div className="flex items-center">
@@ -254,7 +266,7 @@ export default function AdsList({ initialAds }: AdsListProps) {
 
           {/* Mobile Card View */}
           <div className="lg:hidden divide-y divide-gray-200">
-            {ads.map((ad) => (
+            {filteredAds.map((ad) => (
               <div key={ad.id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">

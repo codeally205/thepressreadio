@@ -1,41 +1,59 @@
 import { db } from '@/lib/db'
 import { users, subscriptions } from '@/lib/db/schema'
-import { desc, eq, and, gt } from 'drizzle-orm'
+import { desc, eq, and, gt, count } from 'drizzle-orm'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { UserIcon } from '@heroicons/react/24/outline'
 import RefreshButton from './RefreshButton'
+import Pagination from '@/components/ui/Pagination'
 
-async function getUsers() {
-  return await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      avatarUrl: users.avatarUrl,
-      authProvider: users.authProvider,
-      role: users.role,
-      createdAt: users.createdAt,
-      // Get active subscription info
-      subscriptionPlan: subscriptions.plan,
-      subscriptionStatus: subscriptions.status,
-      subscriptionEnd: subscriptions.currentPeriodEnd
-    })
-    .from(users)
-    .leftJoin(
-      subscriptions, 
-      and(
-        eq(users.id, subscriptions.userId),
-        eq(subscriptions.status, 'active'),
-        gt(subscriptions.currentPeriodEnd, new Date())
-      )
-    )
-    .orderBy(desc(users.createdAt))
-    .limit(100)
+const ITEMS_PER_PAGE = 10
+
+interface UsersListProps {
+  page?: number
 }
 
-export default async function UsersList() {
-  const usersList = await getUsers()
+async function getUsers(page: number = 1) {
+  const offset = (page - 1) * ITEMS_PER_PAGE
+  
+  const [usersList, totalCountResult] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+        authProvider: users.authProvider,
+        role: users.role,
+        createdAt: users.createdAt,
+        // Get active subscription info
+        subscriptionPlan: subscriptions.plan,
+        subscriptionStatus: subscriptions.status,
+        subscriptionEnd: subscriptions.currentPeriodEnd
+      })
+      .from(users)
+      .leftJoin(
+        subscriptions, 
+        and(
+          eq(users.id, subscriptions.userId),
+          eq(subscriptions.status, 'active'),
+          gt(subscriptions.currentPeriodEnd, new Date())
+        )
+      )
+      .orderBy(desc(users.createdAt))
+      .limit(ITEMS_PER_PAGE)
+      .offset(offset),
+    db.select({ count: count() }).from(users)
+  ])
+  
+  const totalCount = totalCountResult[0].count
+  
+  return { usersList, totalCount }
+}
+
+export default async function UsersList({ page = 1 }: UsersListProps) {
+  const { usersList, totalCount } = await getUsers(page)
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -209,6 +227,17 @@ export default async function UsersList() {
       ) : (
         <div className="text-center py-12">
           <p className="text-gray-500">No users found</p>
+        </div>
+      )}
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            baseUrl="/admin/users"
+          />
         </div>
       )}
     </div>

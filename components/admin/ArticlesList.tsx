@@ -1,19 +1,26 @@
 import { db } from '@/lib/db'
 import { articles, users } from '@/lib/db/schema'
-import { desc, eq, like, or, and } from 'drizzle-orm'
+import { desc, eq, like, or, and, count } from 'drizzle-orm'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { EyeIcon, PencilIcon, VideoCameraIcon, PhotoIcon, TrashIcon } from '@heroicons/react/24/outline'
 import RefreshButton from './RefreshButton'
 import DeleteArticleButton from './DeleteArticleButton'
+import Pagination from '@/components/ui/Pagination'
+import ArticlesFilter from './ArticlesFilter'
+
+const ITEMS_PER_PAGE = 10
 
 interface ArticlesListProps {
   searchQuery?: string
   category?: string
   status?: string
+  page?: number
 }
 
-async function getArticles({ searchQuery, category, status }: ArticlesListProps = {}) {
+async function getArticles({ searchQuery, category, status, page = 1 }: ArticlesListProps = {}) {
+  const offset = (page - 1) * ITEMS_PER_PAGE
+  
   // Build conditions array
   const conditions = []
   
@@ -34,6 +41,19 @@ async function getArticles({ searchQuery, category, status }: ArticlesListProps 
     conditions.push(eq(articles.status, status))
   }
 
+  // Build the where clause
+  const whereClause = conditions.length > 0 
+    ? (conditions.length === 1 ? conditions[0] : and(...conditions))
+    : undefined
+
+  // Get total count
+  const totalCountResult = await db
+    .select({ count: count() })
+    .from(articles)
+    .where(whereClause)
+  
+  const totalCount = totalCountResult[0].count
+
   // Build the base query
   const baseQuery = db
     .select({
@@ -50,24 +70,33 @@ async function getArticles({ searchQuery, category, status }: ArticlesListProps 
       coverImageUrl: articles.coverImageUrl,
       videoUrl: articles.videoUrl,
       videoType: articles.videoType,
-      viewCount: articles.viewCount, // Use the cached view count from articles table
+      viewCount: articles.viewCount,
     })
     .from(articles)
     .leftJoin(users, eq(articles.authorId, users.id))
 
   // Apply where clause if conditions exist
-  const query = conditions.length > 0 
-    ? baseQuery.where(conditions.length === 1 ? conditions[0] : and(...conditions))
-    : baseQuery
+  const query = whereClause ? baseQuery.where(whereClause) : baseQuery
 
-  return await query
+  const articlesList = await query
     .orderBy(desc(articles.updatedAt))
-    .limit(100) // Increased limit for better admin experience
+    .limit(ITEMS_PER_PAGE)
+    .offset(offset)
+  
+  return { articlesList, totalCount }
 }
 
 export default async function ArticlesList(props: ArticlesListProps) {
-  const { searchQuery, category, status } = props
-  const articlesList = await getArticles(props)
+  const { searchQuery, category, status, page = 1 } = props
+  const { articlesList, totalCount } = await getArticles(props)
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
+  
+  // Build query string for pagination
+  const queryParams = new URLSearchParams()
+  if (searchQuery) queryParams.set('search', searchQuery)
+  if (category) queryParams.set('category', category)
+  if (status) queryParams.set('status', status)
+  const baseUrl = `/admin/articles${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -82,64 +111,7 @@ export default async function ArticlesList(props: ArticlesListProps) {
   return (
     <div className="bg-white shadow rounded-lg">
       <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            All Articles ({articlesList.length})
-          </h3>
-          <div className="flex items-center gap-4">
-            {/* Search Form */}
-            <form method="GET" className="flex items-center gap-2">
-              <input
-                type="text"
-                name="search"
-                placeholder="Search articles..."
-                defaultValue={searchQuery}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <select
-                name="category"
-                defaultValue={category || ''}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Categories</option>
-                <option value="politics">Politics</option>
-                <option value="economy">Economy</option>
-                <option value="business">Business</option>
-                <option value="technology">Technology</option>
-                <option value="culture">Culture</option>
-                <option value="sport">Sport</option>
-                <option value="health">Health</option>
-                <option value="environment">Environment</option>
-              </select>
-              <select
-                name="status"
-                defaultValue={status || ''}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Status</option>
-                <option value="published">Published</option>
-                <option value="draft">Draft</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="archived">Archived</option>
-              </select>
-              <button
-                type="submit"
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Filter
-              </button>
-              {(searchQuery || category || status) && (
-                <Link
-                  href="/admin/articles"
-                  className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                >
-                  Clear
-                </Link>
-              )}
-            </form>
-            <RefreshButton size="sm" />
-          </div>
-        </div>
+        <ArticlesFilter totalCount={totalCount} />
       </div>
       
       {articlesList.length > 0 ? (
@@ -344,6 +316,17 @@ export default async function ArticlesList(props: ArticlesListProps) {
           >
             Create your first article
           </Link>
+        </div>
+      )}
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            baseUrl={baseUrl}
+          />
         </div>
       )}
     </div>
