@@ -115,14 +115,16 @@ export default async function Sidebar() {
                       {article.videoUrl ? (
                         <>
                           {article.videoType === 'youtube' ? (
-                            <img
+                            <Image
                               src={`https://img.youtube.com/vi/${
                                 article.videoUrl.includes('v=') 
                                   ? article.videoUrl.split('v=')[1]?.split('&')[0]
                                   : article.videoUrl.split('/').pop()
                               }/maxresdefault.jpg`}
                               alt={article.title}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
+                              unoptimized
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-800 flex items-center justify-center">

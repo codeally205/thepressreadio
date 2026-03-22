@@ -10,6 +10,7 @@ import ArticleBody from '@/components/article/ArticleBody'
 import PaywallOverlay from '@/components/article/PaywallOverlay'
 import VideoPlayer from '@/components/article/VideoPlayer'
 import RelatedArticles from '@/components/article/RelatedArticles'
+import ArticleViewTracker from '@/components/article/ArticleViewTracker'
 import InlineAds from '@/components/ads/InlineAds'
 import ArticleSidebarAds from '@/components/ads/ArticleSidebarAds'
 import Image from 'next/image'
@@ -134,33 +135,8 @@ export default async function ArticlePage({
     .orderBy(sql`RANDOM()`)
     .limit(6)
 
-  // Track article view for all articles (both free and premium)
-  if (session?.user?.id) {
-    try {
-      // Use INSERT ... ON CONFLICT DO NOTHING to handle duplicates gracefully
-      await db.insert(articleViews).values({
-        userId: session.user.id,
-        articleId: articleData.id,
-      }).onConflictDoNothing()
-    } catch (error) {
-      // If foreign key constraint fails, user doesn't exist in database
-      // This can happen if session is stale - just continue without tracking
-      console.warn('Failed to track article view:', error)
-    }
-  } else {
-    // Track anonymous views using a simple fingerprint
-    try {
-      // For anonymous users, create a simple fingerprint based on IP/user agent
-      // In a real app, you might want to use a more sophisticated fingerprinting method
-      const fingerprint = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      await db.insert(articleViews).values({
-        fingerprint: fingerprint,
-        articleId: articleData.id,
-      })
-    } catch (error) {
-      console.warn('Failed to track anonymous article view:', error)
-    }
-  }
+  // Note: Article view tracking is now handled client-side via ArticleViewTracker component
+  // This ensures the view count is properly incremented via the API endpoint
 
   // Handle premium content access control
   if (articleData.accessLevel === 'premium') {
@@ -207,6 +183,9 @@ export default async function ArticlePage({
 
   return (
     <div className="max-w-7xl mx-auto px-4">
+      {/* Client-side view tracking */}
+      <ArticleViewTracker slug={params.slug} />
+      
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Main Article Content - 80% on desktop, 100% on mobile */}
         <article className="w-full lg:w-[80%]">
