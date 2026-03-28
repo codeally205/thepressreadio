@@ -47,6 +47,7 @@ export default async function EditArticlePage({ params }: EditArticlePageProps) 
         ...article,
         excerpt: article.excerpt || '',
         coverImageUrl: article.coverImageUrl || undefined,
+        coverImageCaption: article.coverImageCaption || undefined,
         videoUrl: article.videoUrl || undefined,
         videoThumbnailUrl: article.videoThumbnailUrl || undefined,
         videoDuration: article.videoDuration || undefined,

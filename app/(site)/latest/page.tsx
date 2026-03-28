@@ -278,9 +278,7 @@ export default async function LatestPage({
                 <aside className="hidden lg:block lg:w-[25%]">
                   <div className="sticky top-24">
                     <ArticleSidebarAds 
-                      ads={sidebarAds} 
-                      targetSelector="#latest-articles-section"
-                      page={currentPage}
+                      ads={sidebarAds}
                     />
                   </div>
                 </aside>

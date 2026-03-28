@@ -7,7 +7,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-light;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Keep headings bold */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair font-bold;
+  }
+  
+  /* Regular weight for buttons and UI elements */
+  button, .btn {
+    @apply font-normal;
   }
 }

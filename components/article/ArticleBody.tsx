@@ -53,10 +53,53 @@ export default function ArticleBody({
 
   const displayContent = getDisplayContent()
 
+  // Automatically split content into paragraphs
+  const createParagraphs = (text: string): string[] => {
+    // First, try to split by existing line breaks
+    if (text.includes('\n\n')) {
+      return text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0)
+    }
+    
+    if (text.includes('\n')) {
+      return text.split(/\n+/).map(p => p.trim()).filter(p => p.length > 0)
+    }
+    
+    // If no line breaks, split by sentences (every 4-6 sentences = 1 paragraph)
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text]
+    const paragraphs: string[] = []
+    let currentParagraph = ''
+    let sentenceCount = 0
+    
+    sentences.forEach((sentence) => {
+      currentParagraph += sentence
+      sentenceCount++
+      
+      // Create a new paragraph every 4-6 sentences
+      if (sentenceCount >= 4 && (sentenceCount >= 6 || Math.random() > 0.5)) {
+        paragraphs.push(currentParagraph.trim())
+        currentParagraph = ''
+        sentenceCount = 0
+      }
+    })
+    
+    // Add any remaining text as the last paragraph
+    if (currentParagraph.trim()) {
+      paragraphs.push(currentParagraph.trim())
+    }
+    
+    return paragraphs.filter(p => p.length > 0)
+  }
+
+  const paragraphs = createParagraphs(displayContent)
+
   return (
     <div className="prose prose-lg max-w-none">
-      <div className="whitespace-pre-wrap leading-relaxed text-gray-800">
-        {displayContent}
+      <div className="space-y-6 leading-relaxed text-gray-800">
+        {paragraphs.map((paragraph, index) => (
+          <p key={index} className="text-lg leading-relaxed text-justify">
+            {paragraph}
+          </p>
+        ))}
       </div>
       {truncate && content.length > truncateLength && (
         <div className="mt-4 text-sm text-gray-500 italic">

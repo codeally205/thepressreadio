@@ -28,6 +28,7 @@ interface Article {
   accessLevel: string
   status: string
   coverImageUrl?: string
+  coverImageCaption?: string | null
   videoUrl?: string
   videoThumbnailUrl?: string
   videoDuration?: number
@@ -73,6 +74,7 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
     accessLevel: article?.accessLevel || 'free',
     status: article?.status || 'draft',
     coverImageUrl: article?.coverImageUrl || '',
+    coverImageCaption: article?.coverImageCaption || '',
     videoUrl: article?.videoUrl || '',
     videoThumbnailUrl: article?.videoThumbnailUrl || '',
     videoDuration: article?.videoDuration || 0,
@@ -401,6 +403,18 @@ export default function ArticleEditor({ article }: ArticleEditorProps) {
                         success('Image uploaded successfully!')
                       }}
                       label="Cover Image"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Image Caption (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.coverImageCaption || ''}
+                      onChange={(e) => handleInputChange('coverImageCaption', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Add a caption for the image..."
                     />
                   </div>
                 </div>

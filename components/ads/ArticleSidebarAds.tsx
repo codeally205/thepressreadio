@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 
 interface Ad {
@@ -14,84 +13,22 @@ interface Ad {
 
 interface ArticleSidebarAdsProps {
   ads: Ad[]
-  targetSelector?: string // Optional selector for the content to match height with
-  page?: number // Current page number for ad rotation
 }
 
-export default function ArticleSidebarAds({ ads, targetSelector, page = 1 }: ArticleSidebarAdsProps) {
-  const [visibleAds, setVisibleAds] = useState<Ad[]>([])
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const calculateVisibleAds = () => {
-      // Find the target element to get its height
-      let targetElement: HTMLElement | null = null
-      
-      if (targetSelector) {
-        targetElement = document.querySelector(targetSelector)
-      } else {
-        // Default: look for article element
-        targetElement = document.querySelector('article')
-      }
-      
-      if (!targetElement) {
-        // If no target found, show all ads
-        setVisibleAds(ads)
-        return
-      }
-
-      // Get the total height of the target content
-      const targetHeight = targetElement.scrollHeight
-      
-      // Estimate ad card height (image + content)
-      // aspect-video (16:9) + padding + text ≈ 200px per ad
-      const estimatedAdHeight = 200
-      const headerSpacing = 50 // Space for "Sponsored" header
-      const footerSpacing = 40 // Space for "Advertise with us" footer
-      const availableHeight = targetHeight - headerSpacing - footerSpacing
-      
-      // Calculate how many ads can fit in the target's full height
-      const maxAds = Math.max(1, Math.floor(availableHeight / estimatedAdHeight))
-      
-      // Rotate ads based on page number
-      const startIndex = ((page - 1) * maxAds) % ads.length
-      const rotatedAds: Ad[] = []
-      
-      for (let i = 0; i < Math.min(maxAds, ads.length); i++) {
-        const index = (startIndex + i) % ads.length
-        rotatedAds.push(ads[index])
-      }
-      
-      setVisibleAds(rotatedAds)
-      
-      console.log(`📏 Target height: ${targetHeight}px, Page: ${page}, Showing ${rotatedAds.length} ads starting from index ${startIndex}`)
-    }
-
-    // Calculate after content loads
-    const timer = setTimeout(calculateVisibleAds, 500)
-    
-    // Recalculate on window resize
-    window.addEventListener('resize', calculateVisibleAds)
-    
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', calculateVisibleAds)
-    }
-  }, [ads, targetSelector, page])
-
+export default function ArticleSidebarAds({ ads }: ArticleSidebarAdsProps) {
   if (ads.length === 0) return null
 
   return (
-    <div ref={containerRef} className="space-y-2">
-      <div className="text-center mb-2 sticky top-24 bg-white z-10 pb-2">
+    <div className="space-y-2 pb-4">
+      <div className="text-center mb-2 pb-2">
         <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
           Sponsored
         </span>
       </div>
       
-      {/* Display ads that fit in article height */}
+      {/* Display all unique ads */}
       <div className="space-y-2">
-        {visibleAds.map((ad) => (
+        {ads.map((ad) => (
           <div key={ad.id} className="bg-white border border-gray-200 rounded shadow-sm hover:shadow transition-shadow overflow-hidden">
             {ad.imageUrl && (
               <div className="aspect-video relative bg-gray-100">
@@ -140,7 +77,7 @@ export default function ArticleSidebarAds({ ads, targetSelector, page = 1 }: Art
         ))}
       </div>
       
-      <div className="text-center pt-2 border-t border-gray-200 sticky bottom-0 bg-white">
+      <div className="text-center pt-2 border-t border-gray-200">
         <a
           href="/advertise"
           className="text-[9px] text-gray-500 hover:text-gray-700 underline"

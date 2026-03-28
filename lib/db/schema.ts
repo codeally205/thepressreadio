@@ -85,6 +85,7 @@ export const articles = pgTable('articles', {
   accessLevel: text('access_level').notNull().default('free'),
   status: text('status').notNull().default('draft'),
   coverImageUrl: text('cover_image_url'),
+  coverImageCaption: text('cover_image_caption'),
   // Video support fields
   videoUrl: text('video_url'),
   videoThumbnailUrl: text('video_thumbnail_url'),

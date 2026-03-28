@@ -70,6 +70,7 @@ export default async function ArticlePage({
       category: articles.category,
       accessLevel: articles.accessLevel,
       coverImageUrl: articles.coverImageUrl,
+      coverImageCaption: articles.coverImageCaption,
       videoUrl: articles.videoUrl,
       videoThumbnailUrl: articles.videoThumbnailUrl,
       videoDuration: articles.videoDuration,
@@ -103,7 +104,21 @@ export default async function ArticlePage({
 
   // Get ads if user should see them
   if (showAds) {
-    sidebarAds = await getActiveAds('sidebar', 'unsubscribed', 10) // Sidebar ads
+    // Fetch more ads than needed, then randomize based on article ID
+    const allSidebarAds = await getActiveAds('sidebar', 'unsubscribed', 100)
+    
+    // Use article ID as seed for consistent but different ad selection per article
+    const articleSeed = parseInt(articleData.id.replace(/\D/g, '').slice(0, 8) || '0', 10)
+    
+    // Shuffle ads based on article seed
+    const shuffledAds = [...allSidebarAds].sort((a, b) => {
+      const aHash = (articleSeed + parseInt(a.id.replace(/\D/g, '').slice(0, 8) || '0', 10)) % 1000
+      const bHash = (articleSeed + parseInt(b.id.replace(/\D/g, '').slice(0, 8) || '0', 10)) % 1000
+      return aHash - bHash
+    })
+    
+    // Take first 15 ads from shuffled array
+    sidebarAds = shuffledAds.slice(0, 15)
   }
 
   // Fetch related articles from the same category
@@ -255,6 +270,11 @@ export default async function ArticlePage({
                         className="w-full h-auto max-h-[80vh] object-cover rounded-lg"
                         priority
                       />
+                      {articleData.coverImageCaption && (
+                        <p className="text-sm text-gray-600 italic mt-2 text-center">
+                          {articleData.coverImageCaption}
+                        </p>
+                      )}
                     </div>
                   ) : null}
 
@@ -297,6 +317,11 @@ export default async function ArticlePage({
                       className="w-full h-auto max-h-[80vh] object-cover rounded-lg"
                       priority
                     />
+                    {articleData.coverImageCaption && (
+                      <p className="text-sm text-gray-600 italic mt-2 text-center">
+                        {articleData.coverImageCaption}
+                      </p>
+                    )}
                   </div>
                 ) : null}
 

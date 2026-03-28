@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
       accessLevel: data.accessLevel || 'free',
       status: data.status || 'draft',
       coverImageUrl: data.coverImageUrl || null,
+      coverImageCaption: data.coverImageCaption || null,
       videoUrl: data.videoUrl || null,
       videoThumbnailUrl: data.videoThumbnailUrl || null,
       videoDuration: data.videoDuration ? Math.round(data.videoDuration) : null, // Convert to integer

@@ -95,6 +95,7 @@ export async function PUT(
       accessLevel: data.accessLevel,
       status: data.status,
       coverImageUrl: data.coverImageUrl || null,
+      coverImageCaption: data.coverImageCaption || null,
       videoUrl: data.videoUrl || null,
       videoThumbnailUrl: data.videoThumbnailUrl || null,
       videoDuration: data.videoDuration ? Math.round(data.videoDuration) : null, // Convert to integer
