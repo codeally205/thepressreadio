@@ -11,7 +11,6 @@ import PaywallOverlay from '@/components/article/PaywallOverlay'
 import VideoPlayer from '@/components/article/VideoPlayer'
 import RelatedArticles from '@/components/article/RelatedArticles'
 import ArticleViewTracker from '@/components/article/ArticleViewTracker'
-import InlineAds from '@/components/ads/InlineAds'
 import ArticleSidebarAds from '@/components/ads/ArticleSidebarAds'
 import Image from 'next/image'
 import type { Metadata } from 'next'
@@ -95,7 +94,6 @@ export default async function ArticlePage({
   let remainingFreeArticles = 0
   let showAds = true // Default to showing ads for anonymous users
   let sidebarAds: any[] = []
-  let inlineAds: any[] = []
 
   // Check if user should see ads (unsubscribed users)
   if (session?.user?.id) {
@@ -106,7 +104,6 @@ export default async function ArticlePage({
   // Get ads if user should see them
   if (showAds) {
     sidebarAds = await getActiveAds('sidebar', 'unsubscribed', 10) // Sidebar ads
-    inlineAds = await getActiveAds('inline', 'unsubscribed', 5) // Inline ads for article content
   }
 
   // Fetch related articles from the same category
@@ -255,7 +252,7 @@ export default async function ArticlePage({
                         alt={articleData.title}
                         width={800}
                         height={450}
-                        className="w-full h-auto rounded-lg"
+                        className="w-full h-auto max-h-[80vh] object-cover rounded-lg"
                         priority
                       />
                     </div>
@@ -297,7 +294,7 @@ export default async function ArticlePage({
                       alt={articleData.title}
                       width={800}
                       height={450}
-                      className="w-full h-auto rounded-lg"
+                      className="w-full h-auto max-h-[80vh] object-cover rounded-lg"
                       priority
                     />
                   </div>
@@ -307,17 +304,6 @@ export default async function ArticlePage({
                   body={articleData.body} 
                   truncate={false}
                 />
-
-                {/* Inline ads within article content for unsubscribed users */}
-                {inlineAds.length > 0 && (
-                  <div className="my-8">
-                    <InlineAds 
-                      showAds={showAds} 
-                      initialAds={inlineAds} 
-                      position="middle" 
-                    />
-                  </div>
-                )}
               </>
             )}
           </div>
